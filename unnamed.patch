@@ -1,0 +1,531 @@
+Index: DataProcessing/DataStandardization.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/DataProcessing/DataStandardization.py b/DataProcessing/DataStandardization.py
+new file mode 100644
+--- /dev/null	(revision e6ec06833042412c154f955c6eb65b4f122cc6fa)
++++ b/DataProcessing/DataStandardization.py	(revision e6ec06833042412c154f955c6eb65b4f122cc6fa)
+@@ -0,0 +1,15 @@
++'''
++数据的预处理功能
++'''
++import numpy as np
++
++
++__all__ = ['StandardScaler']
++def StandardScaler(data):
++    data = np.array(data)
++    mean_ = data.mean()
++    scale_ = data.std()
++    var_ = data.var()
++    return (data - mean_)/scale_, mean_,scale_,var_
++
++
+Index: DataProcessing/PerformanceMeasure.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/DataProcessing/PerformanceMeasure.py b/DataProcessing/PerformanceMeasure.py
+new file mode 100644
+--- /dev/null	(revision e6ec06833042412c154f955c6eb65b4f122cc6fa)
++++ b/DataProcessing/PerformanceMeasure.py	(revision e6ec06833042412c154f955c6eb65b4f122cc6fa)
+@@ -0,0 +1,127 @@
++from sklearn.metrics import confusion_matrix
++
++
++def MeanSquarederror(test, result):
++    '''
++    test与result一个是测试集本身的映射结果，一个是测试集经过模型的映射
++    :param test:
++    :param result:
++    :return:
++    '''
++    sum = 0
++    n = len(test)
++    i = 0
++    while i < n:
++        sum += (test[i] - result[i]) * (test[i] - result[i])
++        i += 1
++    return sum / n
++
++
++def ACC(test, result):
++    """
++
++    :param test:
++    :param result:
++    :return:
++    """
++    sum = 0
++    n = len(test)
++    i = 0
++    while i < n:
++        if test[i] == result[i]:
++            sum += 1
++        i += 1
++    return sum / n
++
++
++def REC(test, result):
++    """
++
++    :param test:
++    :param result:
++    :return:
++    """
++    sum = 0
++    n = len(test)
++    i = 0
++    while i < n:
++        if test[i] != result[i]:
++            sum += 1
++        i += 1
++    return sum / n
++
++
++def ConfusionMatrix(y_test, y_pre):
++    """
++    记得这是分类的任务，如果你当成回归的话很可能运行失败
++    :param test:
++    :param result:
++    :return:
++    """
++    return confusion_matrix(y_test, y_pre)
++
++
++def F1_Score(y_test, y_pre):
++    """
++     记得这是分类的任务，如果你当成回归的话很可能运行失败
++    :param test:
++    :param result:
++    :return:
++    """
++    matrix = confusion_matrix(y_test, y_pre)
++    n = len(y_test)
++    TP = matrix[0, 0]
++    TN = matrix[1, 1]
++    return (2 * TP) / (n + TP - TN)
++
++
++def Precision(y_test, y_pre):
++    """
++    :param y_test:
++    :param y_pre:
++    :return:
++    """
++    TP = confusion_matrix(y_test, y_pre)[0, 0]
++    FP = confusion_matrix(y_test, y_pre)[1, 0]
++    return TP / (TP + FP)
++
++
++def Recall(y_test, y_pre):
++    """
++    :param y_test:
++    :param y_pre:
++    :return:
++    """
++    TP = confusion_matrix(y_test, y_pre)[0, 0]
++    FN = confusion_matrix(y_test, y_pre)[1, 1]
++    return TP / (TP + FN)
++
++
++def Fβ_score(y_test, y_pre, beta=0.5):
++    """
++    :param y_test:
++    :param y_pre:
++    :param beta:
++    :return:
++    """
++    R = Recall(y_test, y_pre)
++    P = Precision(y_test, y_pre)
++    b = beta * beta
++    return ((1 + b) * P * R) / ((b * P) + R)
++
++
++def TruePositiverate(y_test, y_pre):
++    TP = confusion_matrix(y_test, y_pre)[0, 0]
++    FN = confusion_matrix(y_test, y_pre)[0, 1]
++    return TP / (TP + FN)
++
++
++def FalsePositiverate(y_test, y_pre):
++    FP = confusion_matrix(y_test, y_pre)[1, 0]
++    FN = confusion_matrix(y_test, y_pre)[0, 1]
++    return FP / (FP + FN)
++
++def R2Score(y_test, y_pre):
++    mse = MeanSquarederror(y_test,y_pre)
++    _var = y_test.var()
++    return 1-(mse/_var)
+Index: DataProcessing/split.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/DataProcessing/split.py b/DataProcessing/split.py
+--- a/DataProcessing/split.py	(revision f5d38d61a12f106f0ea721ea0982e98cd645e9dc)
++++ b/DataProcessing/split.py	(revision e6ec06833042412c154f955c6eb65b4f122cc6fa)
+@@ -1,7 +1,7 @@
+ '''
+ 数据的分割功能
+ '''
+-
++import random
+ import numpy as np
+ 
+ __all__ = ['HoldOut', 'StratifiedSampling']
+@@ -9,6 +9,7 @@
+ 
+ def HoldOut(data: np.ndarray, persent=0.3) -> np.ndarray:
+     """
++    留一法
+     :param data: 要进行留出法分离集合的数据
+     :param persent: 训练集保留的数量
+     :return: np.narray的类型
+@@ -22,11 +23,154 @@
+     return data_train, data_test
+ 
+ 
+-def StratifiedSampling(data: np.ndarray, split_type=0, name=None, col=0, n=0, persent=0.3) -> np.ndarray:
+-    # 因为用的numpy暂时只对数字的范围进行分类
+-    if not (name != 0 & split_type == 1 & n != 0) | (col != 0 & split_type == 0 & n == 0):
+-        # 这里还需要改一下条件
+-        raise Exception("请确认参数是否正确")
+-    max_result = np.max(data, axis=col)
+-    num = np.ceil(max_result.max()/n)
+-    #这里可以取三分之一点的数，结果放了numpy里，以后要用每一列
++def StratifiedSampling(data: np.ndarray, persent=0.3) -> np.ndarray:
++    """
++    分层抽样
++    :param data:
++    :param persent: 训练集保留的数量
++    :return: np.narray的类型
++    """
++    label_data_unique = np.unique(data[:, -1])  # 定义分层值域
++    sample_data = []
++    test_data = []
++    sample_dict = {}
++    for label_data in label_data_unique:
++        sample_list = []
++        for data_tmp in data:
++            if data_tmp[-1] == label_data:
++                sample_list.append(data_tmp)
++        num = int(np.ceil(len(sample_list) * persent))
++        each_sample_data = random.sample(sample_list, num)
++        sample_data.extend(each_sample_data)
++        sample_dict[label_data] = len(each_sample_data)
++    data_train = np.array(sample_data)
++    for i in data_train:
++        b = 0
++        for j in data:
++            if (i == j).all():
++                data = np.delete(data, b, axis=0)
++            b += 1
++    data_test = data
++    return data_train, data_test
++
++
++# 开始转变思路，先实现再创造
++from sklearn.model_selection import KFold
++
++
++def KFold_cai(data, k=2):
++    '''
++     def custom_cv_2folds(X):
++...     n = X.shape[0]
++...     i = 1
++...     while i <= 2:
++...         idx = np.arange(n * (i - 1) / 2, n * i / 2, dtype=int)
++...         yield idx, idx
++...         i += 1
++    有时间就随机获取下前面的index /斜眼笑
++    :param data:
++    :param k:
++    :return:
++    '''
++    train = []
++    test = []
++    kf = KFold(n_splits=k)
++    for train_index, test_index in kf.split(data):
++        train.append(data[train_index])
++        test.append(data[test_index])
++    return train, test
++
++
++from sklearn.model_selection import RepeatedKFold
++
++
++def RepeatedKFold_cai(data, k=2, n=2):
++    train = []
++    test = []
++    kf = RepeatedKFold(n_splits=k, n_repeats=n)
++    for train_index, test_index in kf.split(data):
++        train.append(data[train_index])
++        test.append(data[test_index])
++    return train, test
++
++
++from sklearn.model_selection import LeaveOneOut
++
++
++def LeaveOneOut_cai(data):
++    train = []
++    test = []
++    loo = LeaveOneOut()
++    for train_index, test_index in loo.split(data):
++        train.append(data[train_index])
++        test.append(data[test_index])
++    return train, test
++
++
++from sklearn.model_selection import LeavePOut
++
++
++def LeavePOut_cai(data, n=2):
++    train = []
++    test = []
++    lpo = LeavePOut(p=n)
++    for train_index, test_index in lpo.split(data):
++        train.append(data[train_index])
++        test.append(data[test_index])
++    return train, test
++
++
++from sklearn.model_selection import ShuffleSplit
++
++
++def ShuffleSplit_cai(data, n=2):
++    """
++    随机交叉验证
++    :param data:
++    :param n:
++    :return:
++    """
++    train = []
++    test = []
++    ss = ShuffleSplit(n_splits=n, test_size=0.25)
++    for train_index, test_index in ss.split(data):
++        train.append(data[train_index])
++        test.append(data[test_index])
++    return train, test
++
++
++from sklearn.model_selection import cross_val_score
++
++
++def cross_val_score_cai(X, Y, model, sort='f1_macro', v=5):
++    scores = cross_val_score(model, X, Y, cv=v, scoring=sort)
++
++    return scores
++
++
++from sklearn.model_selection import cross_validate
++
++def cross_validate_cai(X, Y, model, v=5, scort=['precision_macro', 'recall_macro']):
++    """
++    from sklearn.metrics.scorer import make_scorer
++scoring = {'prec_macro': 'precision_macro',
++...            'rec_macro': make_scorer(recall_score, average='macro')}
++ scores = cross_validate(clf, iris.data, iris.target, scoring=scoring,
++...                         cv=5, return_train_score=True)
++sorted(scores.keys())
++['fit_time', 'score_time', 'test_prec_macro', 'test_rec_macro',
++ 'train_prec_macro', 'train_rec_macro']
++scores['train_rec_macro']
++array([0.97..., 0.97..., 0.99..., 0.98..., 0.98...])
++    :param X:
++    :param Y:
++    :param model:
++    :param v:
++    :param scort:
++    :return:
++    """
++    scores = cross_validate(model, X, Y, cv=v, scoring=scort)
++    sorted(scores.keys())
++
++    return scores
++
+Index: README.md
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/README.md b/README.md
+--- a/README.md	(revision f5d38d61a12f106f0ea721ea0982e98cd645e9dc)
++++ b/README.md	(revision e6ec06833042412c154f955c6eb65b4f122cc6fa)
+@@ -1,4 +1,20 @@
+ # NltdML
+-还在学习中，我的目的分为几步:
+-1.收集各种功能，先把大体框架写好。
+-2.自己实现。
++还在学习中，我的目的分为几步:  
++1.收集各种功能，先把大体框架写好。  
++2.自己实现。  
++
++#笔记
++提问:为什么使用的是非线性转换  
++<font color = 'red'>1.连续多次的线性转换等价于一次线性转换</font>  
++NFL定律:  
++<font color='red'>通过公式的推导，我们发现总误差竟然与学习算法无关，对于任意两个学习算法，无论哪个算法更加”聪明“或者更加”笨拙"，它们的期望性能竟然相同。这就是”没有免费的午餐“定理.（来自：周志华)</font>
++
++
++## 一、数据预处理
++
++## 二、性能衡量指标
++
++
++
++
++
+Index: example/SVM_iris.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/example/SVM_iris.py b/example/SVM_iris.py
+new file mode 100644
+--- /dev/null	(revision e6ec06833042412c154f955c6eb65b4f122cc6fa)
++++ b/example/SVM_iris.py	(revision e6ec06833042412c154f955c6eb65b4f122cc6fa)
+@@ -0,0 +1,33 @@
++# -*- coding: utf-8 -*-
++"""
++Created on Thu Aug 26 19:04:46 2021
++
++@author: 13056
++"""
++from sklearn import svm
++from sklearn.datasets import load_iris
++from sklearn.model_selection import train_test_split
++
++iris = load_iris()
++"""
++data
++DESCR
++feature_names
++filename
++frame
++target
++target_names
++"""
++x = iris['data']
++y = iris['target']
++x_train,x_test,y_train,y_test = train_test_split(x,y,test_size = 0.3)
++"""
++建立模型并使用
++"""
++clf = svm.SVC()
++clf = clf.fit(x_train,y_train)
++score = clf.score(x_test,y_test)
++"""
++查看支持向量
++"""
++support = clf.support_vectors_
+\ No newline at end of file
+Index: example/diabetes.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/example/diabetes.py b/example/diabetes.py
+new file mode 100644
+--- /dev/null	(revision e6ec06833042412c154f955c6eb65b4f122cc6fa)
++++ b/example/diabetes.py	(revision e6ec06833042412c154f955c6eb65b4f122cc6fa)
+@@ -0,0 +1,50 @@
++import os
++
++import PySide2
++import matplotlib.pyplot as plt
++import numpy as np
++from sklearn import datasets, linear_model
++from sklearn.metrics import mean_squared_error, r2_score
++from DataProcessing.PerformanceMeasure import MeanSquarederror, R2Score
++
++dirname = os.path.dirname(PySide2.__file__)
++plugin_path = os.path.join(dirname, 'plugins', 'platforms')
++os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = plugin_path
++
++'''
++导入糖尿病的数据集
++'''
++diabetes = datasets.load_diabetes()
++'''
++把数据分成训练集与验证集
++'''
++x = diabetes.data[:, 3]
++x = x.reshape(442, 1)
++y = diabetes['target']
++x_train = x[:-20]
++x_test = x[-20:]
++y_train = y[:-20]
++y_test = y[-20:]
++'''
++开始建立模型，并得出结果
++'''
++reg = linear_model.LinearRegression()
++reg.fit(x_train, y_train)
++y_pred = reg.predict(x_test)
++'''
++用模型评估的标准去评估一下这个模型
++'''
++"""
++这是我之前自己写的方法
++print("平均标准误差: %.2f" % MeanSquarederror(y_test, y_pred))  
++print('决定系数: %.2f' % R2Score(y_test,y_pred))
++"""
++print("平均标准误差: %.2f" % mean_squared_error(y_test, y_pred))
++print('决定系数: %.2f' % r2_score(y_test, y_pred))
++print(np.size(x_test), np.size(y_test))
++'''
++画图
++'''
++plt.scatter(x_test, y_test, color='red')
++plt.plot(x_test, y_pred, color='blue')
++plt.show()
+Index: test.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/test.py b/test.py
+--- a/test.py	(revision f5d38d61a12f106f0ea721ea0982e98cd645e9dc)
++++ b/test.py	(revision e6ec06833042412c154f955c6eb65b4f122cc6fa)
+@@ -1,13 +1,25 @@
++import os
+ 
++import PySide2
++import matplotlib.pyplot as plt
+ import numpy as np
+-from DataProcessing import split
+-
+-# 用于测试功能
+-if __name__ == '__main__':
+-    x = np.array([[1,2],[2,3],[3,4],[2,8]])
+-    split.StratifiedSampling(data=x,col=1,n=3)
+-
+-
++from sklearn import datasets, linear_model
++from sklearn.model_selection import train_test_split
+ 
++dirname = os.path.dirname(PySide2.__file__)
++plugin_path = os.path.join(dirname, 'plugins', 'platforms')
++os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = plugin_path
+ 
+-
++"""
++导入数据集
++"""
++iris = datasets.load_iris()  # 最近spyder坏了很难过
++x = iris.data[:, -3:-1]
++y = iris.target
++h = .02
++print(x)
++print(np.size(x), np.size(y))
++"""
++这数据因为是预先准备好的所以不需要预处理,只简单把训练集与测试集分出来就好
++"""
++x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3)
+diff --git a/example/__init__.py b/example/__init__.py
+new file mode 100644

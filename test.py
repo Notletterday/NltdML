@@ -1,25 +1,47 @@
-import os
+print("hello,world!")
+import tensorflow as tf
+import keras
+from tensorflow import keras
 
-import PySide2
-import matplotlib.pyplot as plt
 import numpy as np
-from sklearn import datasets, linear_model
-from sklearn.model_selection import train_test_split
+(x_train,y_train),(x_test,y_test) = keras.datasets.boston_housing.load_data()
+order = np.argsort(np.random.random(x_train.shape))
+x_train = x_train[order]
+y_train = y_train[order]
+from DataProcessing import DataStandardization
+x_train = DataStandardization.StandardScaler(x_train)[0]
+x_test = DataStandardization.StandardScaler(x_test)[0]
 
-dirname = os.path.dirname(PySide2.__file__)
-plugin_path = os.path.join(dirname, 'plugins', 'platforms')
-os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = plugin_path
+def buildmodel():
+    model = keras.models.Sequential()
+    model.add(keras.layers.Dense(64,activation =tf.nn.relu,input_shape=(x_train.shape[1],)))
+    model.add(keras.layers.Dense(64,activation =tf.nn.relu))
+    model.add(keras.layers.Dense(1))
+    optimizer = keras.optimizers.RMSprop()
+    model.compile(loss='mse',optimizer=optimizer,metrics=['mae'])
+    return model
+model = buildmodel()
+model.summary()
 
-"""
-导入数据集
-"""
-iris = datasets.load_iris()  # 最近spyder坏了很难过
-x = iris.data[:, -3:-1]
-y = iris.target
-h = .02
-print(x)
-print(np.size(x), np.size(y))
-"""
-这数据因为是预先准备好的所以不需要预处理,只简单把训练集与测试集分出来就好
-"""
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3)
+
+
+
+class PrintDot(keras.callbacks.Callback):
+    def on_epoch_end(self,epoch,logs):
+        if epoch%100 ==0:
+            print('')
+        print('.',end='')
+EPOCHS = 500
+history = model.fit(x_train,y_train,epochs=EPOCHS,validation_split=0.2,verbose=0,callbacks=[PrintDot()])
+print(history.history.keys())
+import matplotlib.pyplot as plt
+def plot_history(history):
+    plt.figure()
+    plt.xlabel('epoch')
+    plt.ylabel('Mame[1000$]')
+    plt.plot(history.epoch,np.array(history.history['mae']),label='TrainLoss')
+    plt.plot(history.epoch, np.array(history.history['val_mae']), label='ValLoss')
+    plt.legend()
+    plt.ylim([0,5])
+    plt.show()
+plot_history(history)
